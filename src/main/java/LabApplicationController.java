@@ -42,21 +42,30 @@
 //=======================================================================
 
 import javafx.fxml.FXML;
+import javafx.fxml.FXMLLoader;
 import javafx.fxml.Initializable;
+import javafx.scene.Parent;
+import javafx.scene.Scene;
 import javafx.scene.control.TextField;
-import javafx.scene.control.TextInputDialog;
 import javafx.scene.control.TreeItem;
 import javafx.scene.control.TreeView;
 import javafx.stage.FileChooser;
+import javafx.stage.Modality;
+import javafx.stage.Stage;
 
 import java.io.File;
+import java.io.IOException;
 import java.net.URL;
-import java.util.*;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.ResourceBundle;
 
-public class LabApplicationController implements Initializable
+public class LabApplicationController implements Initializable, ITabConfigurationListener
 {
-    private int count;
-    Map<String, Collection<File>> tabDataSetMap;
+    private Map<String, List<File>> tabDataSetMap;
+
+    private Map<String, Double> tabNormalizationOffsetMap;
 
     @FXML
     private TreeView<String> treeView;
@@ -67,50 +76,42 @@ public class LabApplicationController implements Initializable
     @Override
     public void initialize(URL location, ResourceBundle resources)
     {
-        count = 0;
         tabDataSetMap = new HashMap<>();
 
         treeView.setCellFactory(new DragAndDropCell(treeView));
         treeView.setRoot(new TreeItem<>("Tabs"));
         treeView.setShowRoot(false);
+
+        tabNormalizationOffsetMap = new HashMap<>();
     }
 
     @FXML
     private void addTabAction()
     {
-        FileChooser fileChooser = new FileChooser();
 
-        fileChooser.setTitle("Select Data Files");
-        fileChooser.setSelectedExtensionFilter(new FileChooser.ExtensionFilter("Text Files", ".txt"));
+        FXMLLoader loader = new FXMLLoader(getClass().getResource("tabInformationDialog.fxml"));
+        TabInformationDialogController tabInformationDialogController = new TabInformationDialogController();
+        Parent dialogRoot = null;
 
-        TextInputDialog textInputDialog = new TextInputDialog(Integer.toString(count++));
-        textInputDialog.setTitle("Excel Tab Name");
-        textInputDialog.setHeaderText("Enter a new Excel Tab Name");
-        textInputDialog.setContentText("Please enter a tab name");
+        tabInformationDialogController.addTabConfigurationListener(this);
+        loader.setController(tabInformationDialogController);
 
-        textInputDialog.showAndWait().ifPresent(text -> {
-            System.out.println("Text: " + text);
+        try
+        {
+            dialogRoot = loader.load();
+            Scene scene = new Scene(dialogRoot);
+            Stage stage = new Stage();
+            stage.setScene(scene);
+            stage.initModality(Modality.WINDOW_MODAL);
+            stage.initOwner(treeView.getScene().getWindow());
+            stage.show();
 
-            if (!text.isEmpty())
-            {
-                List<File> files = fileChooser.showOpenMultipleDialog(treeView.getScene().getWindow());
+        }
+        catch (IOException e)
+        {
+            e.printStackTrace();
+        }
 
-                TreeItem<String> tabItem = new TreeItem<>(text);
-
-                if (!files.isEmpty())
-                {
-                    tabDataSetMap.put(text, files);
-                    treeView.getRoot().getChildren().add(tabItem);
-
-                    for (File file : files)
-                    {
-                        TreeItem<String> fileItem = new TreeItem<>(file.getName());
-
-                        tabItem.getChildren().add(fileItem);
-                    }
-                }
-            }
-        });
     }
 
     @FXML
@@ -125,6 +126,34 @@ public class LabApplicationController implements Initializable
             fileName = fileName + ".xlsx";
         }
 
-        ExcelFileWriter.createFile(fileName, tabDataSetMap);
+        ExcelFileWriter.createFile(fileName, tabDataSetMap, tabNormalizationOffsetMap);
+    }
+
+    @Override
+    public void createTab(String tabName, double normalizationOffset)
+    {
+        FileChooser fileChooser = new FileChooser();
+
+        fileChooser.setTitle("Select Data Files");
+        fileChooser.setSelectedExtensionFilter(new FileChooser.ExtensionFilter("Text Files", ".txt"));
+
+        List<File> files = fileChooser.showOpenMultipleDialog(treeView.getScene().getWindow());
+
+        TreeItem<String> tabItem = new TreeItem<>(tabName);
+
+        if (!files.isEmpty())
+        {
+            tabDataSetMap.put(tabName, files);
+            treeView.getRoot().getChildren().add(tabItem);
+
+            for (File file : files)
+            {
+                TreeItem<String> fileItem = new TreeItem<>(file.getName());
+
+                tabItem.getChildren().add(fileItem);
+            }
+        }
+
+        tabNormalizationOffsetMap.put(tabName, normalizationOffset);
     }
 }
