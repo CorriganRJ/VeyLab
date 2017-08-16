@@ -67,7 +67,7 @@ public class LabApplication extends Application
         Parent root = loader.load();
 
         stage.setTitle("Vey Lab");
-        stage.setScene(new Scene(root, 500, 500));
+        stage.setScene(new Scene(root));
         stage.show();
     }
 

@@ -8,8 +8,8 @@ import java.util.*;
 
 public class ExcelFileWriter
 {
-
-    private static final String FILE_NAME = "MyFirstExcel.xlsx";
+    private static final String TIME_HEADER = "Time (sec)";
+    private static final String ABSORBANCE_HEADER = "Absorbance";
 
     public static void createFile(String fileName, Map<String, Collection<File>> tabDataSetMap)
     {
@@ -17,7 +17,6 @@ public class ExcelFileWriter
 
         for (Map.Entry<String, Collection<File>> entry : tabDataSetMap.entrySet())
         {
-            int rowNum = 0;
             int columnOffset = 0;
 
             XSSFSheet sheet = getSheet(workbook, entry.getKey());
@@ -25,8 +24,6 @@ public class ExcelFileWriter
             for (File file : entry.getValue())
             {
                 Object[][] datatypes = getExcelData(file);
-
-                System.out.println("Creating excel");
 
                 int maxColumns = 2;
 
@@ -51,17 +48,15 @@ public class ExcelFileWriter
                     }
                 }
 
-
                 columnOffset += maxColumns;
-
             }
 
             try
             {
-                File toWrite = new File(FILE_NAME);
+                File toWrite = new File(fileName);
                 toWrite.createNewFile();
 
-                FileOutputStream outputStream = new FileOutputStream(FILE_NAME);
+                FileOutputStream outputStream = new FileOutputStream(fileName);
                 workbook.write(outputStream);
             }
             catch (FileNotFoundException e)
@@ -72,8 +67,6 @@ public class ExcelFileWriter
             {
                 e.printStackTrace();
             }
-
-            System.out.println("Done");
         }
 
     }
@@ -104,9 +97,7 @@ public class ExcelFileWriter
         try
         {
             BufferedReader reader = new BufferedReader(new FileReader(file));
-            String line = null;
-            StringBuilder stringBuilder = new StringBuilder();
-            String ls = System.getProperty("line.separator");
+            String line;
 
             List<List<String>> tableValues = new ArrayList<>();
 
@@ -115,9 +106,10 @@ public class ExcelFileWriter
                 tableValues.add(Arrays.asList(line.split("\t")));
             }
 
-            Object[][] excelTableArray = new Object[2][tableValues.size() + 1];
+            Object[][] excelTableArray = new Object[2][tableValues.size() + 2];
             excelTableArray[0][0] = fileName;
-            excelTableArray[0][1] = "";
+            excelTableArray[0][1] = TIME_HEADER;
+            excelTableArray[1][1] = ABSORBANCE_HEADER;
 
             for (int row = 0; row < tableValues.size(); row++)
             {
@@ -125,7 +117,7 @@ public class ExcelFileWriter
 
                 for (int column = 0; column < rowData.size(); column++)
                 {
-                    excelTableArray[column][row + 1] = rowData.get(column);
+                    excelTableArray[column][row + 2] = rowData.get(column);
                 }
             }
 

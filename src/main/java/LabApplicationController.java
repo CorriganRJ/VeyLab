@@ -43,6 +43,7 @@
 
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
+import javafx.scene.control.TextField;
 import javafx.scene.control.TextInputDialog;
 import javafx.scene.control.TreeItem;
 import javafx.scene.control.TreeView;
@@ -60,6 +61,9 @@ public class LabApplicationController implements Initializable
     @FXML
     private TreeView<String> treeView;
 
+    @FXML
+    private TextField fileNameTextField;
+
     @Override
     public void initialize(URL location, ResourceBundle resources)
     {
@@ -68,6 +72,7 @@ public class LabApplicationController implements Initializable
 
         treeView.setCellFactory(new DragAndDropCell(treeView));
         treeView.setRoot(new TreeItem<>("Tabs"));
+        treeView.setShowRoot(false);
     }
 
     @FXML
@@ -113,6 +118,13 @@ public class LabApplicationController implements Initializable
     {
         //TODO: Sort tabDataSetMap order according to tree view order
 
-        ExcelFileWriter.createFile("Example", tabDataSetMap);
+        String fileName = fileNameTextField.getText();
+
+        if (!fileName.endsWith(".xlsx"))
+        {
+            fileName = fileName + ".xlsx";
+        }
+
+        ExcelFileWriter.createFile(fileName, tabDataSetMap);
     }
 }
