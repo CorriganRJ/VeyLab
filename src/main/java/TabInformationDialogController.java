@@ -41,34 +41,62 @@
 //  categories, the proposal will be rejected.
 //=======================================================================
 
-import javafx.application.Application;
-import javafx.fxml.FXMLLoader;
-import javafx.scene.Parent;
-import javafx.scene.Scene;
+import javafx.fxml.FXML;
+import javafx.scene.control.TextField;
 import javafx.stage.Stage;
 
-public class LabApplication extends Application
+import java.util.ArrayList;
+import java.util.Collection;
+
+public class TabInformationDialogController
 {
+    private Collection<ITabConfigurationListener> tabConfigurationListeners;
 
+    private String name;
+    private Double normalizationOffset;
 
-    public static void main(String[] args)
+    @FXML
+    private TextField nameTextField;
+    @FXML
+    private TextField normalizationOffsetTextField;
+
+    public TabInformationDialogController()
     {
-        LabApplication.launch(LabApplication.class, args);
+        tabConfigurationListeners = new ArrayList<>();
     }
 
-    @Override
-    public void start(Stage stage) throws Exception
+    public void addTabConfigurationListener(ITabConfigurationListener tabConfigurationListener)
     {
-
-        FXMLLoader loader = new FXMLLoader(getClass().getResource("excelParser.fxml"));
-
-        loader.setController(new LabApplicationController());
-
-        Parent root = loader.load();
-
-        stage.setTitle("Vey Lab");
-        stage.setScene(new Scene(root));
-        stage.show();
+        tabConfigurationListeners.add(tabConfigurationListener);
     }
 
+    public void removeTabConfigurationListener(ITabConfigurationListener tabConfigurationListener)
+    {
+        tabConfigurationListeners.remove(tabConfigurationListener);
+    }
+
+    @FXML
+    private void okButtonAction()
+    {
+        name = nameTextField.getText();
+
+        try
+        {
+            normalizationOffset = Double.parseDouble(normalizationOffsetTextField.getText());
+        }
+        catch (Exception exception)
+        {
+            normalizationOffset = 0.0;
+        }
+
+        ((Stage) nameTextField.getScene().getWindow()).close();
+
+        tabConfigurationListeners.forEach(tabConfigurationListener -> tabConfigurationListener.createTab(name, normalizationOffset));
+    }
+
+    @FXML
+    private void cancelButtonAction()
+    {
+        ((Stage) nameTextField.getScene().getWindow()).close();
+    }
 }

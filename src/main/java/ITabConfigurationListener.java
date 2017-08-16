@@ -41,34 +41,7 @@
 //  categories, the proposal will be rejected.
 //=======================================================================
 
-import javafx.application.Application;
-import javafx.fxml.FXMLLoader;
-import javafx.scene.Parent;
-import javafx.scene.Scene;
-import javafx.stage.Stage;
-
-public class LabApplication extends Application
+public interface ITabConfigurationListener
 {
-
-
-    public static void main(String[] args)
-    {
-        LabApplication.launch(LabApplication.class, args);
-    }
-
-    @Override
-    public void start(Stage stage) throws Exception
-    {
-
-        FXMLLoader loader = new FXMLLoader(getClass().getResource("excelParser.fxml"));
-
-        loader.setController(new LabApplicationController());
-
-        Parent root = loader.load();
-
-        stage.setTitle("Vey Lab");
-        stage.setScene(new Scene(root));
-        stage.show();
-    }
-
+    void createTab(String tabName, double normalizationOffset);
 }
