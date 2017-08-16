@@ -4,76 +4,40 @@ import org.apache.poi.xssf.usermodel.XSSFSheet;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 
 import java.io.*;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Map;
 
 public class ExcelFileWriter
 {
+    private static XSSFWorkbook workbook = new XSSFWorkbook();
 
-    private static final String FILE_NAME = "MyFirstExcel.xlsx";
+    private static final String TIME_HEADER = "Time (sec)";
+    private static final String ABSORBANCE_HEADER = "Absorbance";
 
-    public static void createFile(String fileName, Map<String, Collection<File>> tabDataSetMap)
+    public static void createFile(String fileName, Map<String, List<File>> tabDataSetMap, Map<String, Double> normalizationOffset)
     {
-        XSSFWorkbook workbook = new XSSFWorkbook();
-
-        for (Map.Entry<String, Collection<File>> entry : tabDataSetMap.entrySet())
+        for (Map.Entry<String, List<File>> entry : tabDataSetMap.entrySet())
         {
-            int rowNum = 0;
-            int columnOffset = 0;
+            String sheetName = entry.getKey();
+            List<File> files = entry.getValue();
+            int columnOffset = copyDataValuesToExcelCells(sheetName, files);
 
-            XSSFSheet sheet = getSheet(workbook, entry.getKey());
-
-            for (File file : entry.getValue())
-            {
-                Object[][] datatypes = getExcelData(file);
-
-                System.out.println("Creating excel");
-
-                int maxColumns = 2;
-
-                for (int rowIndex = 0; rowIndex < datatypes[0].length; rowIndex++)
-                {
-                    Row row = getRow(sheet, rowIndex);
-
-                    for (int columnIndex = 0; columnIndex < datatypes.length; columnIndex++)
-                    {
-                        Cell cell = row.createCell(columnOffset + columnIndex);
-
-                        try
-                        {
-                            double value = Double.parseDouble(datatypes[columnIndex][rowIndex].toString());
-                            cell.setCellValue(value);
-                        }
-                        catch (Exception ex)
-                        {
-                            cell.setCellValue((String) datatypes[columnIndex][rowIndex]);
-                        }
-
-                    }
-                }
-
-
-                columnOffset += maxColumns;
-
-            }
+            addNormalizedDataToExcelCells(sheetName, files, columnOffset, normalizationOffset);
 
             try
             {
-                File toWrite = new File(FILE_NAME);
+                File toWrite = new File(fileName);
                 toWrite.createNewFile();
 
-                FileOutputStream outputStream = new FileOutputStream(FILE_NAME);
+                FileOutputStream outputStream = new FileOutputStream(fileName);
                 workbook.write(outputStream);
-            }
-            catch (FileNotFoundException e)
-            {
-                e.printStackTrace();
             }
             catch (IOException e)
             {
                 e.printStackTrace();
             }
-
-            System.out.println("Done");
         }
 
     }
@@ -104,9 +68,7 @@ public class ExcelFileWriter
         try
         {
             BufferedReader reader = new BufferedReader(new FileReader(file));
-            String line = null;
-            StringBuilder stringBuilder = new StringBuilder();
-            String ls = System.getProperty("line.separator");
+            String line;
 
             List<List<String>> tableValues = new ArrayList<>();
 
@@ -115,9 +77,10 @@ public class ExcelFileWriter
                 tableValues.add(Arrays.asList(line.split("\t")));
             }
 
-            Object[][] excelTableArray = new Object[2][tableValues.size() + 1];
+            Object[][] excelTableArray = new Object[2][tableValues.size() + 2];
             excelTableArray[0][0] = fileName;
-            excelTableArray[0][1] = "";
+            excelTableArray[0][1] = TIME_HEADER;
+            excelTableArray[1][1] = ABSORBANCE_HEADER;
 
             for (int row = 0; row < tableValues.size(); row++)
             {
@@ -125,7 +88,7 @@ public class ExcelFileWriter
 
                 for (int column = 0; column < rowData.size(); column++)
                 {
-                    excelTableArray[column][row + 1] = rowData.get(column);
+                    excelTableArray[column][row + 2] = rowData.get(column);
                 }
             }
 
@@ -137,5 +100,102 @@ public class ExcelFileWriter
         }
 
         return null;
+    }
+
+    private static int copyDataValuesToExcelCells(String sheetName, List<File> files)
+    {
+        int columnOffset = 0;
+
+        XSSFSheet sheet = getSheet(workbook, sheetName);
+
+        for (File file : files)
+        {
+            Object[][] datatypes = getExcelData(file);
+
+            int maxColumns = 2;
+
+            for (int rowIndex = 0; rowIndex < datatypes[0].length; rowIndex++)
+            {
+                Row row = getRow(sheet, rowIndex);
+
+                for (int columnIndex = 0; columnIndex < datatypes.length; columnIndex++)
+                {
+                    Cell cell = row.createCell(columnOffset + columnIndex);
+
+                    try
+                    {
+                        double value = Double.parseDouble(datatypes[columnIndex][rowIndex].toString());
+                        cell.setCellValue(value);
+                    }
+                    catch (Exception ex)
+                    {
+                        cell.setCellValue((String) datatypes[columnIndex][rowIndex]);
+                    }
+
+                }
+            }
+
+            columnOffset += maxColumns;
+        }
+
+        return columnOffset;
+    }
+
+    private static void addNormalizedDataToExcelCells(String sheetName, List<File> files, int columnOffset, Map<String, Double> normalizationOffset)
+    {
+        int letterOffset = 0;
+        XSSFSheet sheet = getSheet(workbook, sheetName);
+
+        for (File file : files)
+        {
+            Object[][] datatypes = getExcelData(file);
+
+            int maxColumns = 2;
+
+            String fileName = file.getName().split("\\.")[0] + "Norm";
+            Row manualRowData = getRow(sheet, 0);
+            Cell manualDataCell = manualRowData.createCell(columnOffset);
+
+            manualDataCell.setCellValue(fileName);
+
+            manualRowData = getRow(sheet, 1);
+            manualDataCell = manualRowData.createCell(columnOffset);
+            manualDataCell.setCellValue(TIME_HEADER);
+            manualDataCell = manualRowData.createCell(columnOffset + 1);
+            manualDataCell.setCellValue(ABSORBANCE_HEADER);
+
+            for (int rowIndex = 2; rowIndex < datatypes[0].length; rowIndex++)
+            {
+                Row row = getRow(sheet, rowIndex);
+
+                for (int columnIndex = 0; columnIndex < datatypes.length; columnIndex++)
+                {
+                    Cell cell = row.createCell(columnOffset + columnIndex);
+                    String rowVariable = Integer.toString(rowIndex + 1);
+                    String columnCharacter = getCharForNumber(columnIndex + letterOffset);
+                    String formula = columnCharacter + rowVariable;
+
+                    if (columnIndex == 1)
+                    {
+                        formula += "-(" + columnCharacter + "$3-" + normalizationOffset.get(sheetName) + ")";
+                    }
+                    cell.setCellFormula(formula);
+                }
+
+            }
+
+            letterOffset += 2;
+            columnOffset += maxColumns;
+        }
+    }
+
+    private static String getCharForNumber(int i)
+    {
+        char[] alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ".toCharArray();
+        if (i > 25)
+        {
+            return "";
+        }
+        return Character.toString(alphabet[i]);
     }
 }
