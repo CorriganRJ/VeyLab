@@ -46,13 +46,16 @@ import javafx.fxml.FXMLLoader;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.stage.Stage;
+import org.osgi.framework.BundleActivator;
+import org.osgi.framework.BundleContext;
 
-public class LabApplication extends Application
+public class LabApplication extends Application implements BundleActivator
 {
 
 
     public static void main(String[] args)
     {
+        System.out.println("Starting\n\n\n\n\n");
         LabApplication.launch(LabApplication.class, args);
     }
 
@@ -71,4 +74,16 @@ public class LabApplication extends Application
         stage.show();
     }
 
+    @Override
+    public void start(BundleContext context) throws Exception
+    {
+
+        main(null);
+    }
+
+    @Override
+    public void stop(BundleContext context) throws Exception
+    {
+
+    }
 }

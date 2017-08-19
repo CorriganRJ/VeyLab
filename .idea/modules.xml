@@ -2,6 +2,8 @@
 <project version="4">
   <component name="ProjectModuleManager">
     <modules>
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/repos-veylab_main.iml" filepath="$PROJECT_DIR$/.idea/modules/repos-veylab_main.iml" group="veylab" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/repos-veylab_test.iml" filepath="$PROJECT_DIR$/.idea/modules/repos-veylab_test.iml" group="veylab" />
       <module fileurl="file://$PROJECT_DIR$/.idea/modules/veylab.iml" filepath="$PROJECT_DIR$/.idea/modules/veylab.iml" />
       <module fileurl="file://$PROJECT_DIR$/.idea/modules/veylab_main.iml" filepath="$PROJECT_DIR$/.idea/modules/veylab_main.iml" group="veylab" />
       <module fileurl="file://$PROJECT_DIR$/.idea/modules/veylab_test.iml" filepath="$PROJECT_DIR$/.idea/modules/veylab_test.iml" group="veylab" />
