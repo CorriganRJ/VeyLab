@@ -175,7 +175,7 @@ public class ExcelFileWriter
                     String columnCharacter = getCharForNumber(columnIndex + letterOffset);
                     String formula = columnCharacter + rowVariable;
 
-                    if (columnIndex == 1)
+                    if (columnIndex == 1 && !columnCharacter.isEmpty())
                     {
                         formula += "-(" + columnCharacter + "$3-" + normalizationOffset.get(sheetName) + ")";
                     }
