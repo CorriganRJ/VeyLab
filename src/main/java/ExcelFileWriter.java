@@ -33,8 +33,7 @@ public class ExcelFileWriter
 
                 FileOutputStream outputStream = new FileOutputStream(fileName);
                 workbook.write(outputStream);
-            }
-            catch (IOException e)
+            } catch (IOException e)
             {
                 e.printStackTrace();
             }
@@ -93,8 +92,7 @@ public class ExcelFileWriter
             }
 
             return excelTableArray;
-        }
-        catch (Exception exception)
+        } catch (Exception exception)
         {
             exception.printStackTrace();
         }
@@ -126,8 +124,7 @@ public class ExcelFileWriter
                     {
                         double value = Double.parseDouble(datatypes[columnIndex][rowIndex].toString());
                         cell.setCellValue(value);
-                    }
-                    catch (Exception ex)
+                    } catch (Exception ex)
                     {
                         cell.setCellValue((String) datatypes[columnIndex][rowIndex]);
                     }
@@ -189,13 +186,14 @@ public class ExcelFileWriter
         }
     }
 
-    private static String getCharForNumber(int i)
+    private static String getCharForNumber(int number)
     {
-        char[] alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ".toCharArray();
-        if (i > 25)
+        StringBuilder sb = new StringBuilder();
+        while (number-- > 0)
         {
-            return "";
+            sb.append((char) ('A' + (number % 26)));
+            number /= 26;
         }
-        return Character.toString(alphabet[i]);
+        return sb.reverse().toString();
     }
 }

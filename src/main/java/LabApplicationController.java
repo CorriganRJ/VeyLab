@@ -46,9 +46,9 @@ import javafx.fxml.FXMLLoader;
 import javafx.fxml.Initializable;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
-import javafx.scene.control.TextField;
-import javafx.scene.control.TreeItem;
-import javafx.scene.control.TreeView;
+import javafx.scene.control.*;
+import javafx.scene.input.MouseButton;
+import javafx.scene.input.MouseEvent;
 import javafx.stage.FileChooser;
 import javafx.stage.Modality;
 import javafx.stage.Stage;
@@ -56,10 +56,7 @@ import javafx.stage.Stage;
 import java.io.File;
 import java.io.IOException;
 import java.net.URL;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.ResourceBundle;
+import java.util.*;
 
 public class LabApplicationController implements Initializable, ITabConfigurationListener
 {
@@ -73,6 +70,8 @@ public class LabApplicationController implements Initializable, ITabConfiguratio
     @FXML
     private TextField fileNameTextField;
 
+    private ContextMenu contextMenu = new ContextMenu();
+
     @Override
     public void initialize(URL location, ResourceBundle resources)
     {
@@ -83,6 +82,24 @@ public class LabApplicationController implements Initializable, ITabConfiguratio
         treeView.setShowRoot(false);
 
         tabNormalizationOffsetMap = new HashMap<>();
+
+        treeView.addEventHandler(MouseEvent.MOUSE_RELEASED, e -> {
+            if (e.getButton() == MouseButton.SECONDARY)
+            {
+                TreeItem<String> selected = treeView.getSelectionModel().getSelectedItem();
+
+                //item is selected - this prevents fail when clicking on empty space
+                if (selected != null)
+                {
+                    //open context menu on current screen position
+                    openContextMenu(selected, e.getScreenX(), e.getScreenY());
+                }
+            } else
+            {
+                //any other click cause hiding menu
+                contextMenu.hide();
+            }
+        });
     }
 
     @FXML
@@ -106,8 +123,7 @@ public class LabApplicationController implements Initializable, ITabConfiguratio
             stage.initOwner(treeView.getScene().getWindow());
             stage.show();
 
-        }
-        catch (IOException e)
+        } catch (IOException e)
         {
             e.printStackTrace();
         }
@@ -143,7 +159,7 @@ public class LabApplicationController implements Initializable, ITabConfiguratio
 
         if (!files.isEmpty())
         {
-            tabDataSetMap.put(tabName, files);
+            tabDataSetMap.put(tabName, new ArrayList<>(files));
             treeView.getRoot().getChildren().add(tabItem);
 
             for (File file : files)
@@ -155,5 +171,25 @@ public class LabApplicationController implements Initializable, ITabConfiguratio
         }
 
         tabNormalizationOffsetMap.put(tabName, normalizationOffset);
+    }
+
+    private void openContextMenu(TreeItem<String> item, double x, double y)
+    {
+        contextMenu.getItems().removeAll();
+
+        if (item.isLeaf())
+        {
+            MenuItem menuItem = new MenuItem("Remove");
+            menuItem.setOnAction(event -> {
+                String tabName = item.getParent().getValue();
+
+                item.getParent().getChildren().remove(item);
+                tabDataSetMap.get(tabName).removeIf(file -> file.getName().equals(item.getValue()));
+            });
+
+            contextMenu.getItems().add(menuItem);
+        }
+        //show menu
+        contextMenu.show(treeView, x, y);
     }
 }
