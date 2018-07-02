@@ -68,9 +68,29 @@ public class ExcelFileWriter
 
             List<List<String>> tableValues = new ArrayList<>();
 
+            String extension = "";
+
+            int i = file.getPath().lastIndexOf('.');
+            if (i > 0)
+            {
+                extension = file.getPath().substring(i + 1);
+            }
+
+            String separator = "\t";
+
+            if (extension.equals("csv"))
+            {
+                separator = ",";
+            }
+
             while ((line = reader.readLine()) != null)
             {
-                tableValues.add(Arrays.asList(line.split("\t")));
+                List<String> split = Arrays.asList(line.split(separator));
+
+                if(split.size() > 0 && isNumeric(split.get(0)))
+                {
+                    tableValues.add(split);
+                }
             }
 
             Object[][] excelTableArray = new Object[2][tableValues.size() + 2];
@@ -95,6 +115,11 @@ public class ExcelFileWriter
         }
 
         return null;
+    }
+
+    private static boolean isNumeric(String str)
+    {
+        return str.matches("-?\\d+(\\.\\d+)?");  //match a number with optional '-' and decimal.
     }
 
     private static int copyDataValuesToExcelCells(String sheetName, Collection<File> files)
@@ -186,6 +211,12 @@ public class ExcelFileWriter
     private static String getCharForNumber(int number)
     {
         StringBuilder sb = new StringBuilder();
+
+        if(number == 0)
+        {
+            return "A";
+        }
+
         while (number-- > 0)
         {
             sb.append((char) ('A' + (number % 26)));
