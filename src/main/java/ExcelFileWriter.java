@@ -4,10 +4,7 @@ import org.apache.poi.xssf.usermodel.XSSFSheet;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 
 import java.io.*;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 public class ExcelFileWriter
 {
@@ -16,12 +13,12 @@ public class ExcelFileWriter
     private static final String TIME_HEADER = "Time (sec)";
     private static final String ABSORBANCE_HEADER = "Absorbance";
 
-    public static void createFile(String fileName, Map<String, List<File>> tabDataSetMap, Map<String, Double> normalizationOffset)
+    public static void createFile(String fileName, Map<String, Collection<File>> tabDataSetMap, Map<String, Double> normalizationOffset)
     {
-        for (Map.Entry<String, List<File>> entry : tabDataSetMap.entrySet())
+        for (Map.Entry<String, Collection<File>> entry : tabDataSetMap.entrySet())
         {
             String sheetName = entry.getKey();
-            List<File> files = entry.getValue();
+            Collection<File> files = entry.getValue();
             int columnOffset = copyDataValuesToExcelCells(sheetName, files);
 
             addNormalizedDataToExcelCells(sheetName, files, columnOffset, normalizationOffset);
@@ -100,7 +97,7 @@ public class ExcelFileWriter
         return null;
     }
 
-    private static int copyDataValuesToExcelCells(String sheetName, List<File> files)
+    private static int copyDataValuesToExcelCells(String sheetName, Collection<File> files)
     {
         int columnOffset = 0;
 
@@ -138,7 +135,7 @@ public class ExcelFileWriter
         return columnOffset;
     }
 
-    private static void addNormalizedDataToExcelCells(String sheetName, List<File> files, int columnOffset, Map<String, Double> normalizationOffset)
+    private static void addNormalizedDataToExcelCells(String sheetName, Collection<File> files, int columnOffset, Map<String, Double> normalizationOffset)
     {
         int letterOffset = 0;
         XSSFSheet sheet = getSheet(workbook, sheetName);
