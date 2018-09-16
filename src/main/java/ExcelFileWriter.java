@@ -3,8 +3,17 @@ import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.xssf.usermodel.XSSFSheet;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 
-import java.io.*;
-import java.util.*;
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.FileReader;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
 
 public class ExcelFileWriter
 {
@@ -18,7 +27,10 @@ public class ExcelFileWriter
         for (Map.Entry<String, Collection<File>> entry : tabDataSetMap.entrySet())
         {
             String sheetName = entry.getKey();
-            Collection<File> files = entry.getValue();
+            List<File> files = new ArrayList<>(entry.getValue());
+
+            Collections.sort(files);
+
             int columnOffset = copyDataValuesToExcelCells(sheetName, files);
 
             addNormalizedDataToExcelCells(sheetName, files, columnOffset, normalizationOffset);
@@ -35,7 +47,6 @@ public class ExcelFileWriter
                 e.printStackTrace();
             }
         }
-
     }
 
     private static XSSFSheet getSheet(XSSFWorkbook workbook, String tabName)
@@ -87,7 +98,7 @@ public class ExcelFileWriter
             {
                 List<String> split = Arrays.asList(line.split(separator));
 
-                if(split.size() > 0 && isNumeric(split.get(0)))
+                if (split.size() > 0 && isNumeric(split.get(0)))
                 {
                     tableValues.add(split);
                 }
@@ -150,7 +161,6 @@ public class ExcelFileWriter
                     {
                         cell.setCellValue((String) datatypes[columnIndex][rowIndex]);
                     }
-
                 }
             }
 
@@ -200,7 +210,6 @@ public class ExcelFileWriter
                     }
                     cell.setCellFormula(formula);
                 }
-
             }
 
             letterOffset += 2;
@@ -212,10 +221,7 @@ public class ExcelFileWriter
     {
         StringBuilder sb = new StringBuilder();
 
-        if(number == 0)
-        {
-            return "A";
-        }
+        number += 1;
 
         while (number-- > 0)
         {
