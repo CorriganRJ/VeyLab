@@ -165,11 +165,7 @@ public class ExcelFileWriter
         int letterOffset = 0;
         XSSFSheet sheet = getSheet(workbook, sheetName);
 
-        List<File> sortedFiles = new ArrayList<>(files);
-
-        Collections.sort(sortedFiles);
-
-        for (File file : sortedFiles)
+        for (File file : files)
         {
             Object[][] datatypes = getExcelData(file);
 
