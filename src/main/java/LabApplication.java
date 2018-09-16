@@ -46,12 +46,9 @@ import javafx.fxml.FXMLLoader;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.stage.Stage;
-import org.osgi.framework.BundleActivator;
-import org.osgi.framework.BundleContext;
 
-public class LabApplication extends Application implements BundleActivator
+public class LabApplication extends Application
 {
-
 
     public static void main(String[] args)
     {
@@ -72,18 +69,5 @@ public class LabApplication extends Application implements BundleActivator
         stage.setTitle("Vey Lab");
         stage.setScene(new Scene(root));
         stage.show();
-    }
-
-    @Override
-    public void start(BundleContext context) throws Exception
-    {
-
-        main(null);
-    }
-
-    @Override
-    public void stop(BundleContext context) throws Exception
-    {
-
     }
 }
