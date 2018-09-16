@@ -3,9 +3,15 @@ import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.xssf.usermodel.XSSFSheet;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 
-import java.io.*;
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.FileReader;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
@@ -16,12 +22,15 @@ public class ExcelFileWriter
     private static final String TIME_HEADER = "Time (sec)";
     private static final String ABSORBANCE_HEADER = "Absorbance";
 
-    public static void createFile(String fileName, Map<String, List<File>> tabDataSetMap, Map<String, Double> normalizationOffset)
+    public static void createFile(String fileName, Map<String, Collection<File>> tabDataSetMap, Map<String, Double> normalizationOffset)
     {
-        for (Map.Entry<String, List<File>> entry : tabDataSetMap.entrySet())
+        for (Map.Entry<String, Collection<File>> entry : tabDataSetMap.entrySet())
         {
             String sheetName = entry.getKey();
-            List<File> files = entry.getValue();
+            List<File> files = new ArrayList<>(entry.getValue());
+
+            Collections.sort(files);
+
             int columnOffset = copyDataValuesToExcelCells(sheetName, files);
 
             addNormalizedDataToExcelCells(sheetName, files, columnOffset, normalizationOffset);
@@ -33,13 +42,11 @@ public class ExcelFileWriter
 
                 FileOutputStream outputStream = new FileOutputStream(fileName);
                 workbook.write(outputStream);
-            }
-            catch (IOException e)
+            } catch (IOException e)
             {
                 e.printStackTrace();
             }
         }
-
     }
 
     private static XSSFSheet getSheet(XSSFWorkbook workbook, String tabName)
@@ -72,9 +79,29 @@ public class ExcelFileWriter
 
             List<List<String>> tableValues = new ArrayList<>();
 
+            String extension = "";
+
+            int i = file.getPath().lastIndexOf('.');
+            if (i > 0)
+            {
+                extension = file.getPath().substring(i + 1);
+            }
+
+            String separator = "\t";
+
+            if (extension.equals("csv"))
+            {
+                separator = ",";
+            }
+
             while ((line = reader.readLine()) != null)
             {
-                tableValues.add(Arrays.asList(line.split("\t")));
+                List<String> split = Arrays.asList(line.split(separator));
+
+                if (split.size() > 0 && isNumeric(split.get(0)))
+                {
+                    tableValues.add(split);
+                }
             }
 
             Object[][] excelTableArray = new Object[2][tableValues.size() + 2];
@@ -93,8 +120,7 @@ public class ExcelFileWriter
             }
 
             return excelTableArray;
-        }
-        catch (Exception exception)
+        } catch (Exception exception)
         {
             exception.printStackTrace();
         }
@@ -102,7 +128,12 @@ public class ExcelFileWriter
         return null;
     }
 
-    private static int copyDataValuesToExcelCells(String sheetName, List<File> files)
+    private static boolean isNumeric(String str)
+    {
+        return str.matches("-?\\d+(\\.\\d+)?");  //match a number with optional '-' and decimal.
+    }
+
+    private static int copyDataValuesToExcelCells(String sheetName, Collection<File> files)
     {
         int columnOffset = 0;
 
@@ -126,12 +157,10 @@ public class ExcelFileWriter
                     {
                         double value = Double.parseDouble(datatypes[columnIndex][rowIndex].toString());
                         cell.setCellValue(value);
-                    }
-                    catch (Exception ex)
+                    } catch (Exception ex)
                     {
                         cell.setCellValue((String) datatypes[columnIndex][rowIndex]);
                     }
-
                 }
             }
 
@@ -141,7 +170,7 @@ public class ExcelFileWriter
         return columnOffset;
     }
 
-    private static void addNormalizedDataToExcelCells(String sheetName, List<File> files, int columnOffset, Map<String, Double> normalizationOffset)
+    private static void addNormalizedDataToExcelCells(String sheetName, Collection<File> files, int columnOffset, Map<String, Double> normalizationOffset)
     {
         int letterOffset = 0;
         XSSFSheet sheet = getSheet(workbook, sheetName);
@@ -175,13 +204,12 @@ public class ExcelFileWriter
                     String columnCharacter = getCharForNumber(columnIndex + letterOffset);
                     String formula = columnCharacter + rowVariable;
 
-                    if (columnIndex == 1)
+                    if (columnIndex == 1 && !columnCharacter.isEmpty())
                     {
                         formula += "-(" + columnCharacter + "$3-" + normalizationOffset.get(sheetName) + ")";
                     }
                     cell.setCellFormula(formula);
                 }
-
             }
 
             letterOffset += 2;
@@ -189,13 +217,17 @@ public class ExcelFileWriter
         }
     }
 
-    private static String getCharForNumber(int i)
+    private static String getCharForNumber(int number)
     {
-        char[] alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ".toCharArray();
-        if (i > 25)
+        StringBuilder sb = new StringBuilder();
+
+        number += 1;
+
+        while (number-- > 0)
         {
-            return "";
+            sb.append((char) ('A' + (number % 26)));
+            number /= 26;
         }
-        return Character.toString(alphabet[i]);
+        return sb.reverse().toString();
     }
 }

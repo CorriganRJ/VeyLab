@@ -46,9 +46,9 @@ import javafx.fxml.FXMLLoader;
 import javafx.fxml.Initializable;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
-import javafx.scene.control.TextField;
-import javafx.scene.control.TreeItem;
-import javafx.scene.control.TreeView;
+import javafx.scene.control.*;
+import javafx.scene.input.MouseButton;
+import javafx.scene.input.MouseEvent;
 import javafx.stage.FileChooser;
 import javafx.stage.Modality;
 import javafx.stage.Stage;
@@ -56,14 +56,11 @@ import javafx.stage.Stage;
 import java.io.File;
 import java.io.IOException;
 import java.net.URL;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.ResourceBundle;
+import java.util.*;
 
 public class LabApplicationController implements Initializable, ITabConfigurationListener
 {
-    private Map<String, List<File>> tabDataSetMap;
+    private Map<String, Collection<File>> tabDataSetMap;
 
     private Map<String, Double> tabNormalizationOffsetMap;
 
@@ -72,6 +69,10 @@ public class LabApplicationController implements Initializable, ITabConfiguratio
 
     @FXML
     private TextField fileNameTextField;
+
+    private ContextMenu contextMenu = new ContextMenu();
+
+    private String editedTabOriginalName = "";
 
     @Override
     public void initialize(URL location, ResourceBundle resources)
@@ -83,6 +84,24 @@ public class LabApplicationController implements Initializable, ITabConfiguratio
         treeView.setShowRoot(false);
 
         tabNormalizationOffsetMap = new HashMap<>();
+
+        treeView.addEventHandler(MouseEvent.MOUSE_RELEASED, e -> {
+            if (e.getButton() == MouseButton.SECONDARY)
+            {
+                TreeItem<String> selected = treeView.getSelectionModel().getSelectedItem();
+
+                //item is selected - this prevents fail when clicking on empty space
+                if (selected != null)
+                {
+                    //open context menu on current screen position
+                    openContextMenu(selected, e.getScreenX(), e.getScreenY());
+                }
+            } else
+            {
+                //any other click cause hiding menu
+                contextMenu.hide();
+            }
+        });
     }
 
     @FXML
@@ -106,8 +125,7 @@ public class LabApplicationController implements Initializable, ITabConfiguratio
             stage.initOwner(treeView.getScene().getWindow());
             stage.show();
 
-        }
-        catch (IOException e)
+        } catch (IOException e)
         {
             e.printStackTrace();
         }
@@ -132,6 +150,41 @@ public class LabApplicationController implements Initializable, ITabConfiguratio
     @Override
     public void createTab(String tabName, double normalizationOffset)
     {
+        TreeItem<String> tabItem = new TreeItem<>(tabName);
+
+        treeView.getRoot().getChildren().add(tabItem);
+
+        if (editedTabOriginalName.isEmpty())
+        {
+            createTab(tabName, normalizationOffset, tabItem);
+        } else
+        {
+            Collection<File> files = tabDataSetMap.remove(editedTabOriginalName);
+
+            tabDataSetMap.put(tabName, files);
+            tabNormalizationOffsetMap.remove(editedTabOriginalName);
+            tabNormalizationOffsetMap.put(tabName, normalizationOffset);
+
+            TreeItem<String> toRemove = null;
+            for (TreeItem<String> childItem : treeView.getRoot().getChildren())
+            {
+                if (childItem.getValue().equals(editedTabOriginalName))
+                {
+                    toRemove = childItem;
+                    tabItem.getChildren().addAll(childItem.getChildren());
+
+                    break;
+                }
+            }
+
+            treeView.getRoot().getChildren().remove(toRemove);
+
+            editedTabOriginalName = "";
+        }
+    }
+
+    private void createTab(String tabName, double normalizationOffset, TreeItem<String> tabItem)
+    {
         FileChooser fileChooser = new FileChooser();
 
         fileChooser.setTitle("Select Data Files");
@@ -139,21 +192,65 @@ public class LabApplicationController implements Initializable, ITabConfiguratio
 
         List<File> files = fileChooser.showOpenMultipleDialog(treeView.getScene().getWindow());
 
-        TreeItem<String> tabItem = new TreeItem<>(tabName);
-
         if (!files.isEmpty())
         {
-            tabDataSetMap.put(tabName, files);
-            treeView.getRoot().getChildren().add(tabItem);
+            tabDataSetMap.put(tabName, new HashSet<>(files));
 
             for (File file : files)
             {
-                TreeItem<String> fileItem = new TreeItem<>(file.getName());
+                boolean exists = tabItem.getChildren().stream()
+                        .anyMatch(item -> item.getValue().equals(file.getName()));
 
-                tabItem.getChildren().add(fileItem);
+                if (!exists)
+                {
+                    TreeItem<String> fileItem = new TreeItem<>(file.getName());
+
+                    tabItem.getChildren().add(fileItem);
+                }
             }
         }
 
         tabNormalizationOffsetMap.put(tabName, normalizationOffset);
+    }
+
+    private void openContextMenu(TreeItem<String> item, double x, double y)
+    {
+        contextMenu.getItems().removeAll(contextMenu.getItems());
+
+        if (item.isLeaf())
+        {
+            MenuItem menuItem = new MenuItem("Remove");
+            menuItem.setOnAction(event -> {
+                String tabName = item.getParent().getValue();
+
+                item.getParent().getChildren().remove(item);
+                tabDataSetMap.get(tabName).removeIf(file -> file.getName().equals(item.getValue()));
+            });
+
+            contextMenu.getItems().add(menuItem);
+        } else
+        {
+            String tabName = item.getValue();
+
+            MenuItem addFilesMenuItem = new MenuItem("Add Files");
+            addFilesMenuItem.setOnAction(event -> createTab(tabName, tabNormalizationOffsetMap.get(tabName), item));
+
+            MenuItem editFilesMenuItem = new MenuItem("Edit Configuration");
+            editFilesMenuItem.setOnAction(event -> {
+                editedTabOriginalName = tabName;
+                addTabAction();
+            });
+
+            MenuItem removeMenuItem = new MenuItem("Remove");
+            removeMenuItem.setOnAction(event -> {
+                item.getParent().getChildren().remove(item);
+                tabDataSetMap.remove(tabName);
+                tabNormalizationOffsetMap.remove(tabName);
+            });
+
+            contextMenu.getItems().addAll(addFilesMenuItem, editFilesMenuItem, removeMenuItem);
+        }
+        //show menu
+        contextMenu.show(treeView, x, y);
     }
 }
